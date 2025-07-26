@@ -1,15 +1,26 @@
 
-
 services:
   namenode:
     build: ./NameNode
     container_name: namenode
+    volumes:
+      - /usr/local/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9870"]
+      interval: 1s
+      timeout: 0.1s
+      retries: 5
     networks:
       - hadoop-net
 
   datanode:
     build: ./DataNode
     container_name: datanode
+    volumes:
+      - /usr/local/app/data  
+    depends_on:
+      namenode:
+        condition: service_healthy
     networks:
       - hadoop-net
 
