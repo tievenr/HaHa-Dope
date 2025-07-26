@@ -1,0 +1,18 @@
+
+
+services:
+  namenode:
+    build: ./NameNode
+    container_name: namenode
+    networks:
+      - hadoop-net
+
+  datanode:
+    build: ./DataNode
+    container_name: datanode
+    networks:
+      - hadoop-net
+
+networks:
+  hadoop-net:
+    driver: bridge
