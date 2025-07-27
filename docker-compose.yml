@@ -5,6 +5,8 @@ services:
     volumes:
       - namenode_data:/usr/local/app/namenode_metadata 
       - namenode_logs:/usr/local/app/namenode_logs
+    environment:
+      - BLOCK_SIZE_BYTES=33554432
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9870/health"]
       interval: 5s
