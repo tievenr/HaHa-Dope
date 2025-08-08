@@ -60,17 +60,19 @@ def upload_multiple_files(files_list, max_concurrent=5):
     logger.info(f"Starting concurrent upload of {len(files_list)} files (max {max_concurrent} at once)")
 
     failed_files=[] # This is to retry the upload again on case of failure
+    successful_uploads=[]
     with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
+        #Dictionary which maps the file being uploaded to it's file name
         future_to_file = {executor.submit(upload, file): file for file in files_list}
-    #Dictionary which maps the file being uploaded to it's file name
 
-    # Process results as they complete
+         # Process results as they complete
         for future in as_completed(future_to_file):
             filename = future_to_file[future] #get's da filename from the key
             try:
                 response = future.result()
                 if response and response.status_code == 200:
                     logger.info(f"{filename} uploaded successfully")
+                    successful_uploads.append((filename, response))
                 else:
                     #This is to catch errors which occurred after the upload began
                     logger.error(f"{filename} upload failed")
@@ -80,6 +82,8 @@ def upload_multiple_files(files_list, max_concurrent=5):
                 #errors before uploading
                 logger.error(f"{filename} failed with exception: {e}")
                 failed_files.append(filename)
+
+    #Failed upload handler
     if failed_files:
         logger.info(f"Retrying {len(failed_files)} failed files after 2 second delay...")
         time.sleep(2)  
@@ -93,10 +97,16 @@ def upload_multiple_files(files_list, max_concurrent=5):
                     response = future.result()
                     if response and response.status_code == 200:
                         logger.info(f"{filename} retry successful")
+                        successful_uploads.append((filename,response))
                     else:
                         logger.error(f"{filename} retry failed - giving up")
                 except Exception as e:
-                    logger.error(f"{filename} retry failed with exception: {e}")    
+                    logger.error(f"{filename} retry failed with exception: {e}") 
+    if successful_uploads:
+        logger.info(f"\nDisplaying block information for {len(successful_uploads)} successful uploads:")
+        for filename, response in successful_uploads:
+            print(f"\n--- Results for {filename} ---")
+            display_upload_result(response)   
 
 
 def display_upload_result(response):
