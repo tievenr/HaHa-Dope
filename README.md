@@ -78,15 +78,36 @@ curl -X POST http://localhost:9870/files \
 
 ## Logging
 
-The system uses persistent logging for observability and debugging. Here’s how logs are managed:
+The system uses persistent logging for observability and debugging. Here’s how logs are managed and how to access them:
 
 ### NameNode Logs
 
 - **namenode.log**: General NameNode events (startup, heartbeats, file uploads)
   - **Location in container:** `/usr/local/app/namenode_logs/namenode.log`
+  - **Docker volume:** `namenode_logs`
 - **blocks.log**: Block splitting and block management events
-  - **Location in container:** `/usr/local/app/namenode_logs/blocks.log`
-- **Docker volume:** Both files are stored in the `namenode_logs` volume for persistence.
+  - **Location in container:** `/usr/local/app/namenode_block_logs/blocks.log`
+  - **Docker volume:** `namenode_block_logs`
+
+#### Accessing NameNode Logs
+
+To inspect the logs stored in Docker volumes, use these commands:
+
+**View general NameNode logs:**
+
+```sh
+docker run --rm -it -v haha-dope_namenode_logs:/logs alpine sh
+# Inside the container:
+cat /logs/namenode.log
+```
+
+**View block manager logs:**
+
+```sh
+docker run --rm -it -v haha-dope_namenode_block_logs:/blocks alpine sh
+# Inside the container:
+cat /blocks/blocks.log
+```
 
 ### DataNode Logs
 
@@ -97,6 +118,7 @@ The system uses persistent logging for observability and debugging. Here’s how
 ### Log Volumes
 
 - **NameNode logs:** `namenode_logs` volume
+- **Block manager logs:** `namenode_block_logs` volume
 - **NameNode metadata:** `namenode_data` volume
 - **DataNode data:** `datanode_data` volume
 

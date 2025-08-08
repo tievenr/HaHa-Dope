@@ -1,9 +1,11 @@
 import os
 import uuid
 import re
+
 from namenode_logger import get_blocks_logger
 
 logger = get_blocks_logger()
+print(f"DEBUG: block_manager.py is using logger: {logger.name}")  # Debug print
 
 
 block_size=int(os.getenv("BLOCK_SIZE_BYTES", "33554432")) 

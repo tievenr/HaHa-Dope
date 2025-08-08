@@ -3,14 +3,17 @@ from fastapi import FastAPI, Request
 from block_manager import split_file_into_blocks
 from pydantic import BaseModel
 import os 
+
 from namenode_logger import get_namenode_logger
 
 logger = get_namenode_logger()
+print(f"DEBUG: app.py is using logger: {logger.name}")  # Debug print
 
 # Logger done initialized above 🥀
 
 REPLICATION_FACTOR = int(os.getenv('REPLICATION_FACTOR', '2'))
 logger.info(f"NameNode starting with replication factor: {REPLICATION_FACTOR}")
+logger.info("TEST: This should go to namenode.log")  # Test log
 
 app = FastAPI()
 

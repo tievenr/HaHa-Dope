@@ -5,8 +5,9 @@ services:
     ports:
       - "9870:9870"
     volumes:
-      - namenode_data:/usr/local/app/namenode_metadata 
+      - namenode_data:/usr/local/app/namenode_metadata
       - namenode_logs:/usr/local/app/namenode_logs
+      - namenode_block_logs:/usr/local/app/namenode_block_logs
     environment:
       - BLOCK_SIZE_BYTES=33554432
       - REPLICATION_FACTOR=2
@@ -35,4 +36,5 @@ networks:
 volumes:
   namenode_data:
   namenode_logs:
+  namenode_block_logs:
   datanode_data:
