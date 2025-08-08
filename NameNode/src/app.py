@@ -1,20 +1,16 @@
-import logging
+
 from fastapi import FastAPI, Request
 from block_manager import split_file_into_blocks
 from pydantic import BaseModel
+import os 
+from namenode_logger import get_namenode_logger
 
-## Logger setup
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s: %(name)s: %(levelname)s: %(message)s',
-    handlers=[
-        logging.FileHandler('/usr/local/app/namenode_logs/namenode.log'),  
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
+logger = get_namenode_logger()
+
 # Logger done initialized above 🥀
 
+REPLICATION_FACTOR = int(os.getenv('REPLICATION_FACTOR', '2'))
+logger.info(f"NameNode starting with replication factor: {REPLICATION_FACTOR}")
 
 app = FastAPI()
 

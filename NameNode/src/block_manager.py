@@ -1,18 +1,13 @@
 import os
 import uuid
-import logging
 import re
+from namenode_logger import get_blocks_logger
+
+logger = get_blocks_logger()
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s: %(name)s: %(levelname)s: %(message)s',
-    handlers=[
-        logging.FileHandler('/usr/local/app/namenode_logs/blocks.log'),  #This line is for persistent logs under the log volume hahadope-namenode_logs/
-    ]
-)
-logger = logging.getLogger(__name__)
-block_size=int(os.getenv("BLOCK_SIZE_BYTES", "33554432")) #sets the block size to 32MB but in bytes for manipulation
+block_size=int(os.getenv("BLOCK_SIZE_BYTES", "33554432")) 
+#sets the block size to 32MB but in bytes for manipulation
 
 def sanitize_filename(filename="unknown_file"):
     sanitized = re.sub(r'[^a-zA-Z0-9]', '_', filename) #removing non alphanumeric characters in the filename

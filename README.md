@@ -11,7 +11,7 @@ A Hadoop-inspired distributed file system simulation built with Python, FastAPI,
 ## Current Features
 
 - ✅ NameNode with REST API endpoints
-- ✅ DataNode heartbeat mechanism  
+- ✅ DataNode heartbeat mechanism
 - ✅ Docker Compose orchestration
 - ✅ Persistent logging with Docker volumes
 - ✅ File upload endpoint with block splitting logic
@@ -35,7 +35,7 @@ docker-compose up --build -d
 # Scale to 5 DataNodes
 docker-compose up --scale datanode=5 -d
 
-# Scale to 10 DataNodes  
+# Scale to 10 DataNodes
 docker-compose up --scale datanode=10 -d
 
 # Scale down to 2 DataNodes
@@ -76,13 +76,29 @@ curl -X POST http://localhost:9870/files \
 - `POST /nodes/{node_id}/heartbeat` - Receive DataNode heartbeats
 - `POST /files` - File upload and block splitting
 
-## Logs and Data
+## Logging
 
-All logs and metadata are persisted using Docker named volumes:
+The system uses persistent logging for observability and debugging. Here’s how logs are managed:
 
-- **NameNode logs**: `namenode_logs` volume
-- **NameNode metadata**: `namenode_data` volume  
-- **DataNode data**: `datanode_data` volume
+### NameNode Logs
+
+- **namenode.log**: General NameNode events (startup, heartbeats, file uploads)
+  - **Location in container:** `/usr/local/app/namenode_logs/namenode.log`
+- **blocks.log**: Block splitting and block management events
+  - **Location in container:** `/usr/local/app/namenode_logs/blocks.log`
+- **Docker volume:** Both files are stored in the `namenode_logs` volume for persistence.
+
+### DataNode Logs
+
+- By default, DataNode logs are written to the container’s console output (stdout).
+- You can view these logs using `docker-compose logs datanode` or `docker logs <datanode-container-name>`.
+- **No persistent log file** is configured for DataNodes by default.
+
+### Log Volumes
+
+- **NameNode logs:** `namenode_logs` volume
+- **NameNode metadata:** `namenode_data` volume
+- **DataNode data:** `datanode_data` volume
 
 ## Stop the System
 
