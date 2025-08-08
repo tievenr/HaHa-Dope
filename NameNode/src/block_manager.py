@@ -21,7 +21,7 @@ def sanitize_filename(filename="unknown_file"):
 
 
 def generate_block_id(filename="unknown_file", block_index=0):
-    sanitized_name = sanitize_filename(filename)
+    sanitized_name = sanitize_filename(os.path.basename(filename))
     short_uuid = str(uuid.uuid4())[:8]
     return f"block_{sanitized_name}_{block_index:04d}_{short_uuid}"
 
