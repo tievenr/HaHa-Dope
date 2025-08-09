@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request
 from block_manager import split_file_into_blocks
 from pydantic import BaseModel
 import os 
-
+from metadata_manager import update_datanode_heartbeat
 from namenode_logger import get_namenode_logger
 
 logger = get_namenode_logger()
@@ -31,6 +31,7 @@ async def namenode_healthcheck():
 async def recieve_heartbeats(node_id: str, request: Request):
     payload = await request.json()
     logger.info(f"Heartbeat received from {node_id}: {payload}")
+    update_datanode_heartbeat(node_id)
     return {"recieved from": node_id, "payload": payload}
 
 # This one is when client upload the file so namenode has to split it up 

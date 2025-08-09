@@ -13,4 +13,4 @@ COPY src/ ./
 EXPOSE 9870
 
 
-CMD ["uvicorn", "app:app", "--host","0.0.0.0", "--port","9870"]
+CMD ["python", "-u", "-m", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "9870"]
