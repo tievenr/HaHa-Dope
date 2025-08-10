@@ -7,8 +7,8 @@ os.makedirs('/usr/local/app/namenode_block_logs', exist_ok=True)
 
 def get_namenode_logger():
     """Get the main NameNode logger"""
-    logger = logging.getLogger('namenode_main')  # Changed from 'namenode'
-    if not logger.handlers:  # Only configure once
+    logger = logging.getLogger('namenode_main') 
+    if not logger.handlers: 
         logger.setLevel(logging.INFO)
         
         handler = logging.FileHandler('/usr/local/app/namenode_logs/namenode.log')
@@ -23,8 +23,8 @@ def get_namenode_logger():
 
 def get_blocks_logger():
     """Get the blocks-specific logger"""
-    logger = logging.getLogger('namenode_blocks')  # Changed from 'namenode.blocks'
-    if not logger.handlers:  # Only configure once
+    logger = logging.getLogger('namenode_blocks')  
+    if not logger.handlers:  
         logger.setLevel(logging.INFO)
         
         handler = logging.FileHandler('/usr/local/app/namenode_block_logs/blocks.log')
