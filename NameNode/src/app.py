@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request
 from block_manager import split_file_into_blocks
 from pydantic import BaseModel
 import os 
-from metadata_manager import update_datanode_heartbeat
+from metadata_manager import update_datanode_heartbeat,assign_blocks_to_datanode
 from namenode_logger import get_namenode_logger
 
 logger = get_namenode_logger()
@@ -37,8 +37,7 @@ async def recieve_heartbeats(node_id: str, request: Request):
 # This one is when client upload the file so namenode has to split it up 
 @app.post("/files")
 async def upload_file(file_request: FileUploadRequest):
-    filename= file_request.filename
+    filename = file_request.filename
     filesize_bytes = file_request.filesize_bytes
-    blocks = split_file_into_blocks(filename, filesize_bytes)
-
-    return {"message": "File processed", "blocks": blocks}
+    assignment = assign_blocks_to_datanode(filename, filesize_bytes, REPLICATION_FACTOR)
+    return assignment
