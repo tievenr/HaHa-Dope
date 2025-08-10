@@ -100,3 +100,37 @@ def store_metadata():
                 os.remove(temp_file)
             except Exception:
                 pass  
+
+
+def load_metadata():
+    """
+    Load metadata from disk on NameNode startup.
+    """
+    global active_datanodes, file_metadata, block_assignments
+    
+    metadata_file = os.path.join(METADATA_DIR, "metadata.json")
+    
+    # Check if file exists
+    if not os.path.exists(metadata_file):
+        print("No existing metadata found. Starting fresh.")
+        return
+    
+    try:
+        # read the JSON file
+        with open(metadata_file,"r",encoding="utf-8") as f:
+            metadata= json.load(f)
+        
+        # Restore active_datanodes (convert ISO strings back to datetime)
+        active_datanodes={
+            node_id: datetime.fromisoformat(dt_str) for node_id, dt_str in metadata["active_datanodes"].items()
+        }
+        # Restore file_metadata and block_assignments
+        file_metadata=metadata["file_metadata"]
+        block_assignments=metadata["block_assignments"]
+        print(f"Metadata loaded successfully")
+        
+    except Exception as e:
+        print(f"Failed to load metadata: {e}")
+        active_datanodes={}
+        file_metadata={}
+        block_assignments={}
