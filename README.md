@@ -1,134 +1,157 @@
 ﻿# HAHAHAHAHAHAHa-Dope
 
-A Hadoop-inspired distributed file system simulation built with Python, FastAPI, and Docker.
+A distributed file system simulation inspired by Hadoop HDFS, built with Python, FastAPI, and Docker. This project demonstrates core concepts like a central NameNode for metadata management, DataNodes for storage, block-based file splitting, and data replication.
 
 ## Architecture
 
-- **NameNode**: Central coordinator that manages file metadata and receives heartbeats
-- **DataNode(s)**: Worker nodes that send periodic heartbeats to the NameNode
-- **Client**: (Coming soon) File upload interface
+The system is composed of three main components that communicate over a Docker network:
 
-## Current Features
+-   **NameNode**: The central coordinator. It manages the file system's namespace, tracks which blocks belong to which files, and monitors the health of all DataNodes via a heartbeat mechanism. It does **not** store any file data itself, only metadata.
+-   **DataNode(s)**: Worker nodes responsible for storing the actual file blocks. They periodically send heartbeats to the NameNode to report that they are alive and ready. The system is designed to be horizontally scalable by adding more DataNode services.
+-   **Client**: A command-line utility that interacts with the NameNode to upload files. It handles concurrent uploads and displays the block assignment results.
 
-- ✅ NameNode with REST API endpoints
-- ✅ DataNode heartbeat mechanism
-- ✅ Docker Compose orchestration
-- ✅ Persistent logging with Docker volumes
-- ✅ File upload endpoint with block splitting logic
-- ✅ Scalable DataNode deployment
+## Features
+
+-   **RESTful NameNode**: Built with FastAPI, providing endpoints for health checks, heartbeats, and file operations.
+-   **Scalable DataNodes**: Easily scale the number of DataNodes up or down using Docker Compose.
+-   **Block-Based Storage**: Files are split into fixed-size blocks (default 32MB) for distribution across DataNodes.
+-   **Data Replication**: Implements a round-robin (n, n+1) block assignment strategy to ensure each block is replicated across multiple DataNodes for fault tolerance.
+-   **Persistent Metadata & Logs**: Utilizes Docker volumes to persist NameNode metadata and logs, ensuring state is not lost on restart.
+-   **Concurrent Client**: A multi-threaded client capable of uploading multiple files simultaneously.
 
 ## Quick Start
 
-### 1. Build and Start the System
+### 1. Build and Run the System
+
+First, build the Docker images and start the services in detached mode. This will start one NameNode and one DataNode by default.
 
 ```bash
-# Start with default configuration (3 DataNodes)
-docker-compose up --build
-
-# Or run in detached mode
 docker-compose up --build -d
 ```
 
 ### 2. Scale DataNodes
 
+You can easily scale the number of DataNodes to simulate a larger cluster.
+
 ```bash
-# Scale to 5 DataNodes
-docker-compose up --scale datanode=5 -d
-
-# Scale to 10 DataNodes
-docker-compose up --scale datanode=10 -d
-
-# Scale down to 2 DataNodes
-docker-compose up --scale datanode=2 -d
+# Scale up to 3 DataNodes
+docker-compose up --scale datanode=3 -d
 ```
 
-### 3. View System Activity
+### 3. Upload Files with the Client
+
+Run the client to upload test files located in the `client_testfiles` directory.
 
 ```bash
-# Watch all logs in real-time
+python client.py
+```
+
+The client will display the block assignments for each uploaded file, including the DataNode IDs where each block is replicated.
+
+## Configuration
+
+You can customize the system's behavior through environment variables and client settings.
+
+### Environment Variables
+
+These variables are set in the `docker-compose.yml` file for the `namenode` service:
+
+-   `REPLICATION_FACTOR`: The number of DataNodes each block should be replicated to. Default is `2`.
+-   `BLOCK_SIZE_BYTES`: The size of each file block in bytes. Default is `33554432` (32MB).
+
+To change them, simply edit the `environment` section in `docker-compose.yml` and rebuild the containers.
+
+### Client Upload Directory
+
+The client script (`client.py`) is configured to look for files to upload in a directory named `client_testfiles` by default. Place any `.txt` or `.pdf` files you wish to upload into this folder before running the client.
+
+## Viewing Logs
+
+You can monitor the real-time activity of the NameNode and DataNodes.
+
+```bash
+# View logs from all services
 docker-compose logs -f
 
-# View specific service logs
+# View logs from only the NameNode
 docker-compose logs -f namenode
-docker-compose logs -f datanode
 
-# View logs from specific DataNode
-docker-compose logs datanode-1
+# View logs from a specific DataNode instance
+docker-compose logs -f datanode-1
 ```
 
-### 4. Test the System
+## Persistent Storage and Metadata
 
-```bash
-# Check NameNode health
-curl http://localhost:9870/health
+The system uses Docker volumes to persist critical data across container restarts. This is crucial for the NameNode to maintain the file system's state.
 
-# Test file upload endpoint
-curl -X POST http://localhost:9870/files \
-  -H "Content-Type: application/json" \
-  -d '{"filename": "test.txt", "size": 1024}'
+-   **`namenode_data`**: Stores the NameNode's metadata in `metadata.json`.
+-   **`namenode_logs`**: Stores the general `namenode.log`.
+-   **`namenode_block_logs`**: Stores the `blocks.log` for block management events.
+-   **`datanode_data`**: Mount point for DataNodes to store file blocks (implementation in progress).
+
+### Metadata Format
+
+The `metadata.json` file is the brain of the NameNode. It stores the entire state of the file system in a JSON format, allowing the NameNode to recover its state after a restart.
+
+Here is an example of its structure:
+
+```json
+{
+  "last_updated": "2025-08-10T12:00:00.123456",
+  "active_datanodes": {
+    "fdf585333e7e": "2025-08-10T11:59:59.543210",
+    "b1604c5e3d29": "2025-08-10T11:59:58.987654"
+  },
+  "file_metadata": {
+    "client_testfiles/test.txt": {
+      "size": 73400320,
+      "blocks": [
+        "block_test_txt_0000_a6bc20dc",
+        "block_test_txt_0001_c267b2be"
+      ]
+    }
+  },
+  "block_assignments": {
+    "block_test_txt_0000_a6bc20dc": [
+      "fdf585333e7e",
+      "b1604c5e3d29"
+    ],
+    "block_test_txt_0001_c267b2be": [
+      "b1604c5e3d29",
+      "fdf585333e7e"
+    ]
+  }
+}
 ```
 
-## System Endpoints
+### Accessing Persistent Data
 
-### NameNode (Port 9870)
-
-- `GET /health` - Health check
-- `POST /nodes/{node_id}/heartbeat` - Receive DataNode heartbeats
-- `POST /files` - File upload and block splitting
-
-## Logging
-
-The system uses persistent logging for observability and debugging. Here’s how logs are managed:
-
-### NameNode Logs
-
-- **namenode.log**: General NameNode events (startup, heartbeats, file uploads)
-  - **Location in container:** `/usr/local/app/namenode_logs/namenode.log`
-- **blocks.log**: Block splitting and block management events
-  - **Location in container:** `/usr/local/app/namenode_logs/blocks.log`
-- **Docker volume:** Both files are stored in the `namenode_logs` volume for persistence.
-
-### DataNode Logs
-
-- By default, DataNode logs are written to the container’s console output (stdout).
-- You can view these logs using `docker-compose logs datanode` or `docker logs <datanode-container-name>`.
-- **No persistent log file** is configured for DataNodes by default.
-
-### Log Volumes
-
-- **NameNode logs:** `namenode_logs` volume
-- **NameNode metadata:** `namenode_data` volume
-- **DataNode data:** `datanode_data` volume
-
-## Stop the System
+To inspect the log files or metadata stored in the persistent volumes:
 
 ```bash
-# Stop all services
+# Inspect the main metadata file
+docker run --rm -it -v haha-dope_namenode_data:/data alpine cat /data/metadata.json
+
+# Inspect namenode.log
+docker run --rm -it -v haha-dope_namenode_logs:/logs alpine cat /logs/namenode.log
+
+# Inspect blocks.log
+docker run --rm -it -v haha-dope_namenode_block_logs:/logs alpine cat /logs/blocks.log
+```
+
+## Stopping the System
+
+```bash
+# Stop all running services
 docker-compose down
 
-# Stop and remove volumes (WARNING: deletes all data)
+# Stop services AND remove all persistent data (logs, metadata)
 docker-compose down -v
-```
-
-## Project Structure
-
-```
-.
-├── namenode/
-│   ├── Dockerfile
-│   ├── app.py
-│   └── block_manager.py
-├── datanode/
-│   ├── Dockerfile
-│   ├── app.py
-│   └── entrypoint.sh
-└── docker-compose.yml
 ```
 
 ## Next Steps
 
-- [ ] Build client for file uploads
-- [ ] Implement actual data storage in DataNodes
-- [ ] Add replication logic
-
-- [ ] Build file retrieval system
+-   [ ] **DataNode Storage**: Implement the logic for DataNodes to receive and store file blocks.
+-   [ ] **File Retrieval**: Build the client and NameNode logic to read/download files.
+-   [ ] **Fault Tolerance**: Implement re-replication of blocks when a DataNode goes offline.
+-   [ ] **Advanced Health Checks**: Add more detailed health reporting from DataNodes (e.g., disk space).
