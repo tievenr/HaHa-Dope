@@ -108,32 +108,35 @@ def upload_multiple_files(files_list, max_concurrent=5):
             print(f"\n--- Results for {filename} ---")
             display_upload_result(response)   
 
-
 def display_upload_result(response):
+    # This function is purely for aesthetics  
     print(f"Raw response: {response.text}")
     try:
         data = response.json()
         blocks = data.get("blocks", [])
-        print("\n" + "="*60)
+        print("\n" + "="*80)
         print("FILE UPLOAD RESULT")
-        print("="*60)
+        print("="*80)
         if blocks:
             total_size = sum(block["size"] for block in blocks)
-            print(f"Total file size: {total_size:,} bytes")
+            print(f"Total file size: {total_size:,} bytes ({total_size / 1024 / 1024:.1f} MB)")
             print(f"Number of blocks: {len(blocks)}")
             print(f"Block size: 32MB (33,554,432 bytes)")
-            print("\nBlock Details:")
-            print("-" * 60)
+            print("\nBlock Assignment Table:")
+            print("-" * 80)
+            # Table header
+            print(f"{'Block':<8} {'Block ID':<25} {'Size (MB)':<12} {'Assigned DataNodes'}")
+            print("-" * 80)
+            # Table rows
             for i, block in enumerate(blocks, 1):
-                print(f"Block {i}:")
-                print(f"  ID: {block['block_id']}")
-                print(f"  Size: {block['size']:,} bytes ({block['size'] / 1024 / 1024:.1f} MB)")
-                # Print assigned datanodes if present
-                if "assigned_datanodes" in block:
-                    print(f"  Assigned DataNodes: {', '.join(block['assigned_datanodes'])}")
-                if i < len(blocks):
-                    print()
-        print("="*60)
+                block_id = block['block_id']
+                size_mb = block['size'] / 1024 / 1024
+                datanodes = ', '.join(block.get('assigned_datanodes', []))
+                # Truncate long datanode lists if needed
+                if len(datanodes) > 30:
+                    datanodes = datanodes[:27] + "..."
+                print(f"{i:<8} {block_id:<25} {size_mb:<12.1f} {datanodes}")
+        print("="*80)
     except Exception as e:
         logger.error(f"Error parsing response: {e}")
         print(f"Raw response: {response.text}")
