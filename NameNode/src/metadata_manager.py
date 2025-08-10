@@ -1,8 +1,17 @@
 from datetime import datetime, timedelta
 from block_manager import split_file_into_blocks
+from typing import Dict, Any
+import os 
+import json
 
+METADATA_DIR = "/usr/local/app/namenode_metadata"
 active_datanodes = {}  
+file_metadata={}
+block_assignments={}
 HEARTBEAT_TIMEOUT_SECONDS = 30  # Node considered alive if heartbeat within this window
+
+
+os.makedirs(METADATA_DIR, exist_ok=True)
 
 def update_datanode_heartbeat(node_id):
     """Update heartbeat timestamp for a DataNode."""
@@ -47,4 +56,36 @@ def assign_blocks_to_datanode(filename, filesize, replication_factor=2):
 
 
 def store_metadata():
-    pass
+    """
+    Persist all metadata to disk in JSON format.
+    """
+    try:
+        # convert datetime to string
+        metadata = {
+            "active_datanodes": {
+                node_id: dt.isoformat() for node_id,dt in active_datanodes.items()
+            },
+            "file_metadata": file_metadata,
+            "block_assignments": block_assignments,
+            "last_updated": datetime.now().isoformat()
+        }
+        temp_file = os.path.join(METADATA_DIR, "metadata.json.tmp")
+        final_file = os.path.join(METADATA_DIR, "metadata.json")
+        
+        # json.dump() to write metadata into temp
+        with open(temp_file,"w",encoding="utf-8") as f:
+            json.dump(metadata,f,indent=2)
+
+        # atomic move temp_file to final_file to prevent partial writes
+        os.rename(temp_file,final_file)
+        
+        print(f"✅ Metadata saved to {final_file}")
+        
+    except Exception as e:
+        print(f"Failed to save metadata: {e}")
+         # only remove if file exists
+        if os.path.exists(temp_file):
+            try:
+                os.remove(temp_file)
+            except Exception:
+                pass  
