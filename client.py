@@ -110,7 +110,7 @@ def upload_multiple_files(files_list, max_concurrent=5):
 
 
 def display_upload_result(response):
-    #THIS BLOCK IS PURELY FOR AESTHETICS; displays the upload result from the NameNode
+    print(f"Raw response: {response.text}")
     try:
         data = response.json()
         blocks = data.get("blocks", [])
@@ -128,6 +128,9 @@ def display_upload_result(response):
                 print(f"Block {i}:")
                 print(f"  ID: {block['block_id']}")
                 print(f"  Size: {block['size']:,} bytes ({block['size'] / 1024 / 1024:.1f} MB)")
+                # Print assigned datanodes if present
+                if "assigned_datanodes" in block:
+                    print(f"  Assigned DataNodes: {', '.join(block['assigned_datanodes'])}")
                 if i < len(blocks):
                     print()
         print("="*60)
