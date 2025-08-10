@@ -51,6 +51,17 @@ def assign_blocks_to_datanode(filename, filesize, replication_factor=2):
             "assigned_datanodes": assigned_datanodes
         })
         print(f"Assigned block {block['block_id']} to datanodes: {assigned_datanodes}")
+        #updates block assignements to the global var for persistent metatda
+        block_assignments[block["block_id"]] = assigned_datanodes
+    #updates file metadata to the global var so we can persist fr 
+    file_metadata[filename] = {
+        "filesize": filesize,
+        "total_blocks": len(blocks),
+        "created_at": datetime.now().isoformat(),
+        "replication_factor": replication_factor
+    }
+    store_metadata()
+
     return {"blocks": result_blocks}
 
 
