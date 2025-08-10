@@ -3,14 +3,18 @@ from fastapi import FastAPI, Request
 from block_manager import split_file_into_blocks
 from pydantic import BaseModel
 import os 
-from metadata_manager import update_datanode_heartbeat,assign_blocks_to_datanode
+from metadata_manager import update_datanode_heartbeat,assign_blocks_to_datanode, load_metadata
 from namenode_logger import get_namenode_logger
+
+REPLICATION_FACTOR = int(os.getenv('REPLICATION_FACTOR', '2'))
+
 
 logger = get_namenode_logger()
 # Logger done initialized above 🥀
-
-REPLICATION_FACTOR = int(os.getenv('REPLICATION_FACTOR', '2'))
 logger.info(f"NameNode starting with replication factor: {REPLICATION_FACTOR}")
+logger.info("Loading metadat on Namenode Startup ...")
+load_metadata()
+logger.info("Namenode ready to serve request")
 
 app = FastAPI()
 
