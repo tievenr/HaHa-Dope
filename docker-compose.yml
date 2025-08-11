@@ -29,6 +29,16 @@ services:
     networks:
       - hadoop-net
 
+  client:
+    build: ./Client
+    volumes:
+      - ./client_testfiles:/app/client_testfiles
+    depends_on:
+      namenode:
+        condition: service_healthy
+    networks:
+      - hadoop-net
+
 networks:
   hadoop-net:
     driver: bridge
