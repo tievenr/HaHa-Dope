@@ -1,137 +1,184 @@
-﻿# HAHAHAHAHAHAHa-Dope
+﻿# HaHa-Dope
 
-A distributed file system simulation inspired by Hadoop HDFS, built with Python, FastAPI, and Docker. This project demonstrates core concepts like a central NameNode for metadata management, DataNodes for storage, block-based file splitting, and data replication.
+A distributed file system simulation inspired by Hadoop HDFS, built with Python, FastAPI, and Docker. This project demonstrates core concepts of distributed storage including block-based file splitting, data replication, metadata management, and fault tolerance.
 
-## Architecture
+## What Is This?
 
-The system is composed of three main components that communicate over a Docker network:
+HaHa-Dope is a simplified implementation of a distributed file system that mimics the behavior of Hadoop's HDFS. It's designed for learning and experimentation, showcasing how large files are broken into blocks, distributed across multiple storage nodes, and managed through a centralized coordinator.
 
-- **NameNode**: The central coordinator. It manages the file system's namespace, tracks which blocks belong to which files, and monitors the health of all DataNodes via a heartbeat mechanism. It does **not** store any file data itself, only metadata.
-- **DataNode(s)**: Worker nodes responsible for storing the actual file blocks. They periodically send heartbeats to the NameNode to report that they are alive and ready. The system is designed to be horizontally scalable by adding more DataNode services.
-- **Client**: A command-line utility that interacts with the NameNode to upload files. It handles concurrent uploads and displays the block assignment results.
+## System Architecture
 
-## Features
+```
+                        ┌─────────────────┐
+                        │      User       │
+                        │  (Has Files)    │
+                        └─────────┬───────┘
+                                  │ Files to Upload
+                                  │ (.txt, .pdf, etc.)
+                                  ▼
+                        ┌─────────────────┐
+                        │     Client      │
+                        │  (Upload Tool)  │
+                        └─────────┬───────┘
+                                  │ HTTP Requests
+                                  │ (Get Block Assignments)
+                                  ▼
+                        ┌─────────────────┐
+                        │    NameNode     │
+                        │   (Metadata)    │
+                        │                 │
+                        │ • File Registry │
+                        │ • Block Mapping │
+                        │ • Node Health   │
+                        └─────────┬───────┘
+                                  │ Heartbeats &
+                                  │ Health Monitoring
+                     ┌────────────┼────────────┐
+                     ▼            ▼            ▼
+            ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+            │  DataNode1  │ │  DataNode2  │ │  DataNode3  │
+            │             │ │             │ │    ...      │
+            │ • Block     │ │ • Block     │ │ • Block     │
+            │   Storage   │ │   Storage   │ │   Storage   │
+            │ • Heartbeat │ │ • Heartbeat │ │ • Heartbeat │
+            └─────┬───────┘ └─────┬───────┘ └─────┬───────┘
+                  ▲               ▲               ▲
+                  │               │               │
+                  └───────────────┼───────────────┘
+                          Direct Block Upload
+                            (From Client)
+```
 
-- **RESTful NameNode**: Built with FastAPI, providing endpoints for health checks, heartbeats, and file operations.
-- **Scalable DataNodes**: Easily scale the number of DataNodes up or down using Docker Compose.
-- **Block-Based Storage**: Files are split into fixed-size blocks (default 32MB) for distribution across DataNodes.
-- **Data Replication**: Implements a round-robin (n, n+1) block assignment strategy to ensure each block is replicated across multiple DataNodes for fault tolerance.
-- **Persistent Metadata & Logs**: Utilizes Docker volumes to persist NameNode metadata and logs, ensuring state is not lost on restart.
-- **Concurrent Client**: A multi-threaded client capable of uploading multiple files simultaneously.
-- **Actual Block Storage**: DataNodes receive and store file blocks as .dat files on their filesystem.
-- **Docker Network Communication**: Client communicates with NameNode and DataNodes within Docker network.
-- **Base64 Block Transfer**: File blocks are encoded in base64 and transferred via JSON over HTTP.
+### Components Overview
 
-## Quick Start
+- **NameNode**: The central coordinator that manages file system metadata, tracks block locations, and monitors DataNode health. It doesn't store actual file data—only the "map" of where everything is located.
 
-### 1. Build and Run the System
+- **DataNode(s)**: Worker nodes that store the actual file blocks as `.dat` files on their filesystem. They send periodic heartbeats to the NameNode and can be scaled horizontally.
 
-First, build the Docker images and start the services in detached mode. This will start one NameNode and one DataNode by default.
+- **Client**: A command-line utility that uploads files to the system. It communicates with the NameNode to get block assignments, then sends the actual data blocks to the designated DataNodes.
+
+## Key Features
+
+- **RESTful API**: Built with FastAPI for modern, fast HTTP communication
+- **Horizontal Scaling**: Add more DataNodes with a simple Docker Compose command
+- **Block-Based Storage**: Files split into 32MB blocks for efficient distribution
+- **Data Replication**: Round-robin (n, n+1) strategy ensures fault tolerance
+- **Persistent State**: Docker volumes preserve metadata and logs across restarts
+- **Concurrent Operations**: Multi-threaded client handles simultaneous uploads
+- **Base64 Transfer**: Secure block transfer via JSON over HTTP
+- **Real-time Monitoring**: Live heartbeat system tracks node health
+
+## Quick Start Guide
+
+Ready to try it out? Follow these steps to get your distributed file system running in minutes!
+
+### Step 1: Launch the System
+
+Start with the basic setup (1 NameNode + 1 DataNode):
 
 ```bash
 docker-compose up --build -d
 ```
 
-### 2. Scale DataNodes
-
-You can easily scale the number of DataNodes to simulate a larger cluster.
+### Step 2: Scale Your Cluster
 
 ```bash
-# Scale up to 3 DataNodes
+# Add more DataNodes for a bigger cluster
 docker-compose up --scale datanode=3 -d
 ```
 
-### 3. Upload Files with the Client
+### Step 3: Upload Some Files
 
-Run the client to upload test files located in the `client_testfiles` directory.
+It's distributing time I said and distributed all over the datanodes
 
-**Option 1: Run client inside Docker network (Recommended)**
+**Run Client in Docker**
 
 ```bash
-# Start the cluster with multiple DataNodes
+# Start cluster with multiple nodes
 docker-compose up --scale datanode=3 -d
 
-# Run client inside Docker network
+# Upload files using the containerized client
 docker-compose run --rm client
 ```
 
-**Option 2: Run client locally**
+The client will show you exactly where each file block gets stored across your DataNodes!
 
-```bash
-# Update namenode_url to "http://127.0.0.1:9870" in Client/client.py
-python Client/client.py
-```
+## Configuration Options
 
-The client will display the block assignments for each uploaded file, including the DataNode IDs where each block is replicated. The client now actually sends the file blocks to the assigned DataNodes for storage.
-
-## Configuration
-
-You can customize the system's behavior through environment variables and client settings.
+Customize your distributed file system to fit your needs!
 
 ### Environment Variables
 
-These variables are set in the `docker-compose.yml` file for the `namenode` service:
+Edit these in your `docker-compose.yml` under the `namenode` service:
 
-- `REPLICATION_FACTOR`: The number of DataNodes each block should be replicated to. Default is `2`.
-- `BLOCK_SIZE_BYTES`: The size of each file block in bytes. Default is `33554432` (32MB).
+| Variable             | Default    | Description                         |
+| -------------------- | ---------- | ----------------------------------- |
+| `REPLICATION_FACTOR` | `2`        | How many DataNodes store each block |
+| `BLOCK_SIZE_BYTES`   | `33554432` | Size of each block (32MB)           |
 
-To change them, simply edit the `environment` section in `docker-compose.yml` and rebuild the containers.
+### Client Settings
 
-### Client Upload Directory
+- **Upload Directory**: Place files in `client_testfiles/` (supports `.txt` and `.pdf`)
+- **Supported Formats**: Text files, PDFs, and other binary formats
+- **Concurrent Uploads**: Client automatically handles multiple files in parallel (it is limited to 5 concurrent uploads)
 
-The client script is organized in the `Client/` directory and configured to look for files to upload in a directory named `client_testfiles` by default. Place any `.txt` or `.pdf` files you wish to upload into this folder before running the client.
+## Monitoring & Verification
 
-## Verifying Block Storage
+### Check Where Your Blocks Are Stored
 
-After uploading files, you can verify that blocks are actually stored on the DataNodes:
+So you can replace the datanode name with the ones you get when you run docker-compose ps. Here are some examples below
 
 ```bash
-# Check blocks stored on DataNode 1
+# View blocks on DataNode 1
 docker exec haha-dope-datanode-1 ls -la /usr/local/app/data/*/
 
-# Check blocks stored on DataNode 2
+# View blocks on DataNode 2
 docker exec haha-dope-datanode-2 ls -la /usr/local/app/data/*/
 
-# Check a specific DataNode directory for .dat files
+# Inspect specific DataNode storage
 docker exec haha-dope-datanode-1 ls -la /usr/local/app/data/[datanode-id]/
 ```
 
-You should see `.dat` files named with block IDs, like:
+You'll see actual `.dat` files with your block data:
 
 ```
 -rw-r--r-- 1 root root 33554432 Aug 11 07:52 block_test_txt_0000_6fa85c9f.dat
 -rw-r--r-- 1 root root 12582912 Aug 11 07:52 block_test2_txt_0000_39d72e11.dat
 ```
 
-## Viewing Logs
+### Watch the System in Real-Time
 
-You can monitor the real-time activity of the NameNode and DataNodes.
+Monitor live activity across your cluster:
 
 ```bash
-# View logs from all services
+# All services
 docker-compose logs -f
 
-# View logs from only the NameNode
+# Just the NameNode
 docker-compose logs -f namenode
 
-# View logs from a specific DataNode instance
+# Specific DataNode
 docker-compose logs -f datanode-1
 ```
 
-## Persistent Storage and Metadata
+## Understanding the Storage System
 
-The system uses Docker volumes to persist critical data across container restarts. This is crucial for the NameNode to maintain the file system's state.
+### How Data Persists
 
-- **`namenode_data`**: Stores the NameNode's metadata in `metadata.json`.
-- **`namenode_logs`**: Stores the general `namenode.log`.
-- **`namenode_block_logs`**: Stores the `blocks.log` for block management events.
-- **`datanode_data`**: Mount point for DataNodes to store file blocks as .dat files.
+HaHa-Dope uses Docker volumes to keep your data safe across container restarts:
 
-### Metadata Format
+| Volume                | Purpose                                     |
+| --------------------- | ------------------------------------------- |
+| `namenode_data`       | Stores `metadata.json` (the system's brain) |
+| `namenode_logs`       | General NameNode activity logs              |
+| `namenode_block_logs` | Block management event logs                 |
+| `datanode_data`       | Actual file blocks as `.dat` files          |
 
-The `metadata.json` file is the brain of the NameNode. It stores the entire state of the file system in a JSON format, allowing the NameNode to recover its state after a restart.
+It can reset the namenode state by updating the state/env variables to the ones stored metadata volume.
 
-Here is an example of its structure:
+### The Metadata Brain
+
+The `metadata.json` file is where all the magic happens. Here's what it looks like:
 
 ```json
 {
@@ -153,33 +200,40 @@ Here is an example of its structure:
 }
 ```
 
-### Accessing Persistent Data
+### Inspect Persistent Data
 
-To inspect the log files or metadata stored in the persistent volumes:
+Want to peek under the hood?
 
 ```bash
-# Inspect the main metadata file
+# Check the metadata
 docker run --rm -it -v haha-dope_namenode_data:/data alpine cat /data/metadata.json
 
-# Inspect namenode.log
+# Read the main log
 docker run --rm -it -v haha-dope_namenode_logs:/logs alpine cat /logs/namenode.log
 
-# Inspect blocks.log
+# Check block operations
 docker run --rm -it -v haha-dope_namenode_block_logs:/logs alpine cat /logs/blocks.log
 ```
 
 ## Stopping the System
 
 ```bash
-# Stop all running services
+# Stop services (keeps your data)
 docker-compose down
 
-# Stop services AND remove all persistent data (logs, metadata)
+# Nuclear option: Stop AND delete all data
 docker-compose down -v
 ```
 
-## Next Steps
+You can also use the cleanup scripts `docker-cleanup.ps1` or `docker-cleanup.sh` to clear everything
 
-- [ ] **File Retrieval**: Build the client and NameNode logic to read/download files.
-- [ ] **Fault Tolerance**: Implement re-replication of blocks when a DataNode goes offline.
-- [ ] **Advanced Health Checks**: Add more detailed health reporting from DataNodes (e.g., disk space).
+## Work yet to be done:
+
+Here are some features I am yet to build(probably never) but they sort of complete the dfs ?
+
+- [ ] **File Retrieval**: Download files from the distributed storage
+- [ ] **Fault Tolerance**: Auto-replicate blocks when DataNodes fail
+
+---
+
+**Happy Distributing!** If you found this project cool, give it a star and feel free to contribute. I'd love to finally merge PR's
